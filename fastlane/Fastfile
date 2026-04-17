@@ -1,0 +1,113 @@
+default_platform(:ios)
+
+API_KEY_ID = "47SYLM58RF"
+API_ISSUER_ID = "abcf7cb5-46b4-4003-b75e-c9fca34500cf"
+API_KEY_PATH = "/Users/brandoncouloute/Desktop/nnnnnn/AuthKey_47SYLM58RF.p8"
+
+def asc_api_key
+  app_store_connect_api_key(
+    key_id: API_KEY_ID,
+    issuer_id: API_ISSUER_ID,
+    key_filepath: API_KEY_PATH,
+    duration: 1200,
+    in_house: false
+  )
+end
+
+def match_password_from_keychain
+  pw = `security find-generic-password -s match_password -w 2>/dev/null`.strip
+  UI.user_error!("match_password not found in Keychain. Run: security add-generic-password -a $USER -s match_password -w '<your-password>'") if pw.empty?
+  ENV["MATCH_PASSWORD"] = pw
+end
+
+platform :ios do
+
+  desc "Sync signing certs + profiles from the shared encrypted repo"
+  lane :certs do
+    match_password_from_keychain
+    match(
+      type: "appstore",
+      app_identifier: "com.enemiesnature.KittenTips",
+      readonly: false,
+      api_key: asc_api_key
+    )
+  end
+
+  desc "Sync signing in read-only mode (safe for CI / secondary machines)"
+  lane :certs_readonly do
+    match_password_from_keychain
+    match(
+      type: "appstore",
+      app_identifier: "com.enemiesnature.KittenTips",
+      readonly: true,
+      api_key: asc_api_key
+    )
+  end
+
+  desc "Build archive + upload to App Store Connect"
+  lane :build_and_upload do
+    match_password_from_keychain
+    match(type: "appstore", readonly: true, api_key: asc_api_key)
+
+    build_app(
+      scheme: "KittenTips",
+      project: "KittenTips.xcodeproj",
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "./build",
+      output_name: "KittenTips.ipa"
+    )
+
+    upload_to_testflight(
+      api_key: asc_api_key,
+      skip_waiting_for_build_processing: false,
+      skip_submission: true
+    )
+  end
+
+  desc "Create a new App Store version, attach the latest TestFlight build, and submit for review"
+  lane :submit_for_review do |options|
+    version = options[:version] || UI.user_error!("Pass version:\"1.0.1\"")
+    whats_new = options[:whats_new] || "Privacy and stability improvements."
+
+    deliver(
+      api_key: asc_api_key,
+      app_identifier: "com.enemiesnature.KittenTips",
+      app_version: version,
+      release_notes: { "en-US" => whats_new },
+      submit_for_review: true,
+      automatic_release: true,
+      skip_binary_upload: true,
+      skip_metadata: false,
+      skip_screenshots: true,
+      force: true,
+      run_precheck_before_submit: false,
+      submission_information: {
+        add_id_info_uses_idfa: true,
+        add_id_info_serves_ads: true,
+        add_id_info_tracks_install: true,
+        add_id_info_tracks_action: false,
+        add_id_info_limits_tracking: true,
+        export_compliance_uses_encryption: false,
+        export_compliance_is_exempt: true
+      }
+    )
+  end
+
+  desc "Full pipeline: bump, build, upload, submit. Usage: fastlane ship version:1.0.1"
+  lane :ship do |options|
+    version = options[:version] || UI.user_error!("Pass version:\"1.0.1\"")
+    whats_new = options[:whats_new] || "Privacy and stability improvements."
+
+    increment_version_number_in_xcodeproj(
+      version_number: version,
+      xcodeproj: "KittenTips.xcodeproj"
+    )
+    increment_build_number_in_xcodeproj(xcodeproj: "KittenTips.xcodeproj")
+
+    build_and_upload
+
+    submit_for_review(version: version, whats_new: whats_new)
+  end
+end

@@ -1,0 +1,5 @@
+app_identifier("com.enemiesnature.KittenTips")
+team_id("2ADB7G5BLJ")
+# App Store Connect API key auth — json_key_file left blank intentionally;
+# lanes supply the API key programmatically.
+json_key_file("")

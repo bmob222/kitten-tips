@@ -1,0 +1,7 @@
+git_url("https://github.com/bmob222/ios-certs")
+storage_mode("git")
+type("appstore")
+app_identifier(["com.enemiesnature.KittenTips"])
+team_id("2ADB7G5BLJ")
+# Password is pulled from macOS Keychain (service: match_password)
+# or set MATCH_PASSWORD env var before running.

@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+*.xcarchive
+*.ipa
+*.dSYM.zip
+build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Fastlane
+fastlane/report.xml
+fastlane/README.md
+fastlane/test_output/
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/logs/
+
+# Claude Code
+.claude/
+
+# Secrets (defense in depth — keys should live outside repo)
+*.p8
+.env
+.env.*
+credentials.json
+secrets.json
+
+# Editor
+.vscode/
+.idea/
