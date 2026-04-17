@@ -100,11 +100,12 @@ platform :ios do
     version = options[:version] || UI.user_error!("Pass version:\"1.0.1\"")
     whats_new = options[:whats_new] || "Privacy and stability improvements."
 
-    increment_version_number_in_xcodeproj(
-      version_number: version,
-      xcodeproj: "KittenTips.xcodeproj"
-    )
-    increment_build_number_in_xcodeproj(xcodeproj: "KittenTips.xcodeproj")
+    # Modern Xcode projects read MARKETING_VERSION from the pbxproj build
+    # settings; the Info.plist copy is only authoritative for build number.
+    # increment_version_number writes to Info.plist (ignored at build time),
+    # so we edit the pbxproj directly via sed to keep both in sync.
+    sh("cd .. && sed -i '' 's/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = #{version};/g' KittenTips.xcodeproj/project.pbxproj")
+    increment_build_number(xcodeproj: "KittenTips.xcodeproj")
 
     build_and_upload
 

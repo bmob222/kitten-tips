@@ -25,6 +25,8 @@ fastlane/logs/
 
 # Claude Code
 .claude/
+# claude-mem auto-generated per-directory context files
+**/CLAUDE.md
 
 # Secrets (defense in depth — keys should live outside repo)
 *.p8
