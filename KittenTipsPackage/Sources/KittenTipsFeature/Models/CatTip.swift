@@ -16,6 +16,11 @@ struct CatTip: Identifiable, Sendable {
         self.icon = icon.isEmpty ? category.icon : icon
         self.isFavorite = isFavorite
     }
+
+    /// Formatted text used when sharing a tip outside the app.
+    var shareText: String {
+        "🐾 \(title)\n\n\(body)\n\n— shared from KittenTips"
+    }
 }
 
 enum TipCategory: String, CaseIterable, Identifiable, Sendable {

@@ -4,6 +4,7 @@ struct DailyTipView: View {
     @Environment(TipDatabase.self) private var tipDB
     @Environment(StreakTracker.self) private var streakTracker
     @State private var showBreedPicker = false
+    @State private var surpriseTip: CatTip?
 
     var body: some View {
         NavigationStack {
@@ -51,12 +52,19 @@ struct DailyTipView: View {
 
                             Spacer()
 
+                            ShareLink(item: tip.shareText) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .accessibilityLabel("Share today's tip")
+
                             Button {
                                 tipDB.toggleFavorite(tip.id)
                             } label: {
                                 Image(systemName: tipDB.isFavorite(tip.id) ? "heart.fill" : "heart")
                                     .foregroundStyle(tipDB.isFavorite(tip.id) ? .pink : .secondary)
                             }
+                            .accessibilityLabel(tipDB.isFavorite(tip.id) ? "Remove from saved tips" : "Save today's tip")
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 16)
@@ -64,6 +72,19 @@ struct DailyTipView: View {
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .shadow(color: .pink.opacity(0.2), radius: 10, y: 5)
+
+                    // Surprise me
+                    Button {
+                        surpriseTip = tipDB.randomTip(excluding: tip.id)
+                    } label: {
+                        Label("Surprise Me", systemImage: "dice.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.pink)
+                    .accessibilityHint("Shows a random tip")
 
                     // Quick categories
                     Text("Browse by Category")
@@ -108,7 +129,82 @@ struct DailyTipView: View {
             .sheet(isPresented: $showBreedPicker) {
                 BreedPickerView()
             }
+            .sheet(item: $surpriseTip) { tip in
+                SurpriseTipSheet(tip: tip) {
+                    surpriseTip = tipDB.randomTip(excluding: tip.id)
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
         }
+    }
+}
+
+private struct SurpriseTipSheet: View {
+    let tip: CatTip
+    let onAnother: () -> Void
+    @Environment(TipDatabase.self) private var tipDB
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: tip.icon)
+                .font(.system(size: 44))
+                .foregroundStyle(.pink)
+                .padding(.top, 32)
+
+            Label(tip.category.rawValue, systemImage: tip.icon)
+                .font(.caption.bold())
+                .foregroundStyle(.pink)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(.pink.opacity(0.15))
+                .clipShape(Capsule())
+
+            Text(tip.title)
+                .font(.title2.bold())
+                .multilineTextAlignment(.center)
+
+            Text(tip.body)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+
+            HStack(spacing: 16) {
+                ShareLink(item: tip.shareText) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityLabel("Share tip")
+
+                Button {
+                    tipDB.toggleFavorite(tip.id)
+                } label: {
+                    Image(systemName: tipDB.isFavorite(tip.id) ? "heart.fill" : "heart")
+                        .font(.title3)
+                        .foregroundStyle(tipDB.isFavorite(tip.id) ? .pink : .secondary)
+                }
+                .accessibilityLabel(tipDB.isFavorite(tip.id) ? "Remove from saved tips" : "Save tip")
+
+                Spacer()
+
+                Button {
+                    onAnother()
+                } label: {
+                    Label("Another", systemImage: "dice.fill")
+                        .font(.headline)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.pink)
+                .accessibilityHint("Shows another random tip")
+            }
+            .padding(.bottom, 24)
+        }
+        .padding(.horizontal, 24)
     }
 }
 
